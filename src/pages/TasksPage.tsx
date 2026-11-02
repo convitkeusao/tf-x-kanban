@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppUser } from '../api/supabaseAuth';
 import { supabaseConfigured } from '../api/supabaseClient';
 import { createGroup, deleteGroup, joinGroup, listGroups } from '../features/groups/groupsApi';
@@ -15,7 +15,7 @@ import {
   TaskModal,
   TaskDetailsModal,
 } from '../features/tasks/TaskDialogs';
-import { TaskRow } from '../features/tasks/TaskRow';
+import { GroupTasksSection, MyTasksSection, MyTaskFilter, TaskCounts, TaskViewFilter } from '../features/tasks/TaskSections';
 import { NotificationBanner } from '../features/notifications/NotificationBanner';
 import { ActivityLog } from '../features/activity/activityTypes';
 import { TeamGroup } from '../features/groups/groupTypes';
@@ -27,16 +27,6 @@ type Props = {
   user: AppUser | null;
   onSignOut?: () => void;
 };
-
-type ViewFilter = 'all' | TaskStatus;
-type MyTaskFilter = 'active' | 'done';
-
-const taskFilters: Array<[ViewFilter, string]> = [
-  ['all', 'Tất cả'],
-  ['todo', 'Chưa bắt đầu'],
-  ['in_progress', 'Đang thực hiện'],
-  ['done', 'Đã hoàn thành'],
-];
 
 function activityLabel(eventType: ActivityLog['eventType']): string {
   switch (eventType) {
@@ -58,7 +48,7 @@ export function TasksPage({ user, onSignOut }: Props) {
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [groups, setGroups] = useState<TeamGroup[]>([]);
   const [selectedGroupId, setSelectedGroupId] = useState('');
-  const [filter, setFilter] = useState<ViewFilter>('all');
+  const [filter, setFilter] = useState<TaskViewFilter>('all');
   const [myTaskFilter, setMyTaskFilter] = useState<MyTaskFilter>('active');
   const [search, setSearch] = useState('');
   const [sortAscending, setSortAscending] = useState(true);
@@ -72,6 +62,7 @@ export function TasksPage({ user, onSignOut }: Props) {
   const [loading, setLoading] = useState(true);
   const [savingTaskId, setSavingTaskId] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const dataRequestId = useRef(0);
 
   const currentGroup = groups.find((group) => group.id === selectedGroupId);
   const currentMember = members.find((member) => user
@@ -79,18 +70,17 @@ export function TasksPage({ user, onSignOut }: Props) {
     : member.role === 'Trưởng nhóm');
   const isManager = supabaseConfigured ? currentGroup?.role === 'manager' : true;
 
-  const loadActivityLogs = useCallback(async (groupId: string, manager: boolean) => {
-    if (groupId !== selectedGroupId) return;
+  const loadActivityLogs = useCallback(async (groupId: string, manager: boolean, requestId = dataRequestId.current) => {
+    if (groupId !== selectedGroupId || requestId !== dataRequestId.current) return;
     if (!manager) {
       setActivityLogs([]);
       return;
     }
-    setActivityLogs([]);
     try {
       const nextLogs = await listActivityLogs(groupId);
-      if (groupId === selectedGroupId) setActivityLogs(nextLogs);
+      if (groupId === selectedGroupId && requestId === dataRequestId.current) setActivityLogs(nextLogs);
     } catch (caught) {
-      if (groupId === selectedGroupId) {
+      if (groupId === selectedGroupId && requestId === dataRequestId.current) {
         setError(caught instanceof Error ? caught.message : 'Không thể tải nhật ký nhóm.');
       }
     }
@@ -123,6 +113,7 @@ export function TasksPage({ user, onSignOut }: Props) {
   }, [selectedGroupId, user]);
 
   const loadData = useCallback(async () => {
+    const requestId = ++dataRequestId.current;
     if (supabaseConfigured && !selectedGroupId) {
       setTasks([]);
       setMembers([]);
@@ -138,13 +129,16 @@ export function TasksPage({ user, onSignOut }: Props) {
         listTasks(selectedGroupId || undefined),
         listMembers(selectedGroupId || undefined),
       ]);
+      if (requestId !== dataRequestId.current) return;
       setTasks(nextTasks);
       setMembers(nextMembers);
-      await loadActivityLogs(selectedGroupId, isManager);
+      await loadActivityLogs(selectedGroupId, isManager, requestId);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'Không thể tải dữ liệu nhóm.');
+      if (requestId === dataRequestId.current) {
+        setError(caught instanceof Error ? caught.message : 'Không thể tải dữ liệu nhóm.');
+      }
     } finally {
-      setLoading(false);
+      if (requestId === dataRequestId.current) setLoading(false);
     }
   }, [isManager, loadActivityLogs, selectedGroupId]);
 
@@ -165,12 +159,8 @@ export function TasksPage({ user, onSignOut }: Props) {
     .filter((task) => task.assigneeId === currentMember?.id)
     .sort((a, b) => Number(a.status === 'done') - Number(b.status === 'done') || a.title.localeCompare(b.title, 'vi')),
   [currentMember, tasks]);
-  const visibleMyTasks = useMemo(() => myTasks.filter((task) => (
-    myTaskFilter === 'done' ? task.status === 'done' : task.status !== 'done'
-  )), [myTaskFilter, myTasks]);
-
   const taskCounts = useMemo(() => {
-    const counts: Record<ViewFilter, number> = {
+    const counts: TaskCounts = {
       all: tasks.length,
       todo: 0,
       in_progress: 0,
@@ -180,20 +170,18 @@ export function TasksPage({ user, onSignOut }: Props) {
     return counts;
   }, [tasks]);
 
-  const membersById = useMemo(() => new Map(members.map((member) => [member.id, member])), [members]);
-
   async function handleCreateTask(task: NewTask) {
     try {
       const created = await createTask(task, selectedGroupId || undefined);
       setTasks((current) => [created, ...current]);
-      if (currentGroup && isManager) void loadActivityLogs(currentGroup.id, isManager);
+      if (selectedGroupId && isManager) void loadActivityLogs(selectedGroupId, isManager);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Không thể giao công việc.');
       throw caught;
     }
   }
 
-  async function handleUpdateStatus(task: Task, status: TaskStatus, completionReport?: string): Promise<boolean> {
+  const handleUpdateStatus = useCallback(async (task: Task, status: TaskStatus, completionReport?: string): Promise<boolean> => {
     setSavingTaskId(task.id);
     setError('');
     try {
@@ -205,7 +193,7 @@ export function TasksPage({ user, onSignOut }: Props) {
       } else if (task.status === 'done' && task.assigneeId === currentMember?.id) {
         setMyTaskFilter('active');
       }
-      if (currentGroup && isManager) void loadActivityLogs(currentGroup.id, isManager);
+      if (selectedGroupId && isManager) void loadActivityLogs(selectedGroupId, isManager);
       return true;
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Không thể cập nhật trạng thái.');
@@ -213,23 +201,23 @@ export function TasksPage({ user, onSignOut }: Props) {
     } finally {
       setSavingTaskId(null);
     }
-  }
+  }, [currentMember?.id, isManager, loadActivityLogs, selectedGroupId]);
 
-  function requestStatusChange(task: Task, status: TaskStatus) {
+  const requestStatusChange = useCallback((task: Task, status: TaskStatus) => {
     if (status === 'done' && task.status !== 'done') {
       setCompletionTask(task);
       setError('');
       return;
     }
     void handleUpdateStatus(task, status);
-  }
+  }, [handleUpdateStatus]);
 
-  async function handleCompletionReport(report: string): Promise<boolean> {
+  const handleCompletionReport = useCallback(async (report: string): Promise<boolean> => {
     if (!completionTask) return false;
     const saved = await handleUpdateStatus(completionTask, 'done', report);
     if (saved) setCompletionTask(null);
     return saved;
-  }
+  }, [completionTask, handleUpdateStatus]);
 
   async function handleGroupAction(value: string) {
     const group = groupModalMode === 'create'
@@ -309,8 +297,10 @@ export function TasksPage({ user, onSignOut }: Props) {
     }
   }
 
-  const canUpdateTask = (task: Task) => !supabaseConfigured
-    || Boolean(user && (user.id === task.assigneeId || currentMember?.isManager));
+  const canUpdateTask = useCallback((task: Task) => !supabaseConfigured
+    || Boolean(user && (user.id === task.assigneeId || currentMember?.isManager)),
+  [currentMember?.isManager, user]);
+  const toggleSortOrder = useCallback(() => setSortAscending((current) => !current), []);
 
   return (
     <div className="app-shell">
@@ -374,87 +364,33 @@ export function TasksPage({ user, onSignOut }: Props) {
             </div>
           </section>
 
-          <section className="today-section today-card" aria-label="Việc của tôi">
-            <h2>Việc của tôi</h2>
-            <div className="my-task-toolbar">
-              <div className="filter-tabs" role="tablist" aria-label="Lọc việc của tôi">
-                <button type="button" role="tab" aria-selected={myTaskFilter === 'active'} className={myTaskFilter === 'active' ? 'selected' : ''} onClick={() => setMyTaskFilter('active')}>
-                  Đang làm<span>{myTasks.filter((task) => task.status !== 'done').length}</span>
-                </button>
-                <button type="button" role="tab" aria-selected={myTaskFilter === 'done'} className={myTaskFilter === 'done' ? 'selected' : ''} onClick={() => setMyTaskFilter('done')}>
-                  Đã hoàn thành<span>{myTasks.filter((task) => task.status === 'done').length}</span>
-                </button>
-              </div>
-            </div>
-            <div className="today-list">
-              <div className="workflow-task-header">
-                <span>TÊN CÔNG VIỆC</span>
-                <span>HẠN HOÀN THÀNH</span>
-                <span>TRẠNG THÁI</span>
-                <span>THAO TÁC</span>
-              </div>
-              {loading ? (
-                <div className="today-empty" role="status"><span className="loading-spinner" />Đang tải công việc...</div>
-              ) : visibleMyTasks.length ? visibleMyTasks.map((task) => (
-                <TaskRow
-                  key={task.id}
-                  task={task}
-                  assignee={membersById.get(task.assigneeId)}
-                  isSaving={savingTaskId === task.id}
-                  canUpdateStatus={canUpdateTask(task)}
-                  onStatusChange={requestStatusChange}
-                  onViewDetails={setDetailsTask}
-                  workflow
-                />
-              )) : <div className="today-empty">{myTaskFilter === 'done' ? 'Chưa có công việc đã hoàn thành' : 'Chưa có công việc cần làm'}</div>}
-            </div>
-          </section>
+          <MyTasksSection
+            tasks={myTasks}
+            filter={myTaskFilter}
+            onFilterChange={setMyTaskFilter}
+            loading={loading}
+            savingTaskId={savingTaskId}
+            canUpdateTask={canUpdateTask}
+            onStatusChange={requestStatusChange}
+            onViewDetails={setDetailsTask}
+          />
 
-          {isManager && <section className="tasks-section">
-            <div className="section-heading">
-              <h2>Danh sách công việc</h2>
-              <label className="search-box">
-                <Icon name="search" size={20} />
-                <input aria-label="Tìm công việc" placeholder="Tìm tên việc hoặc người phụ trách" value={search} onChange={(event) => setSearch(event.target.value)} />
-              </label>
-            </div>
-            <div className="task-toolbar">
-              <div className="filter-tabs" role="tablist" aria-label="Lọc danh sách công việc">
-                {taskFilters.map(([key, label]) => (
-                  <button key={key} role="tab" aria-selected={filter === key} className={filter === key ? 'selected' : ''} onClick={() => setFilter(key)}>
-                    {label}<span>{taskCounts[key]}</span>
-                  </button>
-                ))}
-              </div>
-              <button className="sort-button" onClick={() => setSortAscending((current) => !current)}><Icon name="calendar" size={18} /><span>{sortAscending ? 'Hạn gần trước' : 'Hạn xa trước'}</span></button>
-            </div>
-            <div className="task-list team-task-list">
-              <div className="task-list-header team-task-header">
-                <span>TÊN CÔNG VIỆC</span>
-              </div>
-              {loading ? (
-                <div className="task-empty" role="status"><span className="loading-spinner" />Đang tải công việc...</div>
-              ) : filteredTasks.length ? filteredTasks.map((task) => (
-                <TaskRow
-                  key={task.id}
-                  task={task}
-                  assignee={membersById.get(task.assigneeId)}
-                  isSaving={savingTaskId === task.id}
-                  canUpdateStatus={canUpdateTask(task)}
-                  onStatusChange={requestStatusChange}
-                  onViewDetails={setDetailsTask}
-                  workflow
-                  showAssignee
-                />
-              )) : (
-                <div className="task-empty"><span className="empty-illustration"><Icon name="tasks" size={28} /></span><strong>Chưa có công việc phù hợp</strong><span>Hãy đổi mục lọc hoặc bấm “Giao việc mới” để tạo việc.</span></div>
-              )}
-            </div>
-            <div className="list-footer">
-              <span>Đang hiển thị <strong>{filteredTasks.length}</strong> / <strong>{tasks.length}</strong> công việc</span>
-              <span className="live-indicator"><i />{supabaseConfigured ? 'Đã đồng bộ' : 'Chỉ lưu trên thiết bị này'}</span>
-            </div>
-          </section>}
+          {isManager && (
+            <GroupTasksSection
+              tasks={filteredTasks}
+              totalTasks={tasks.length}
+              counts={taskCounts}
+              filter={filter}
+              onFilterChange={setFilter}
+              search={search}
+              onSearchChange={setSearch}
+              sortAscending={sortAscending}
+              onSortToggle={toggleSortOrder}
+              loading={loading}
+              isSynced={supabaseConfigured}
+              onViewDetails={setDetailsTask}
+            />
+          )}
           {supabaseConfigured && currentGroup && isManager && (
             <section className="activity-section" aria-labelledby="activity-heading">
               <div className="activity-heading">
