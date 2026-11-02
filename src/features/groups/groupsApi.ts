@@ -1,4 +1,3 @@
-import { supabaseConfigured } from '../../api/supabaseClient';
 import { requireSupabase } from '../../api/requireSupabase';
 import { TeamGroup } from './groupTypes';
 
@@ -15,7 +14,6 @@ function mapGroup(row: GroupMembershipRow): TeamGroup {
 }
 
 export async function listGroups(userId: string): Promise<TeamGroup[]> {
-  if (!supabaseConfigured) return [];
   const { data, error } = await requireSupabase()
     .from('group_members')
     .select('group_id,role,groups(id,name,invite_code)')
@@ -39,17 +37,14 @@ async function groupRpc(
 }
 
 export async function createGroup(name: string): Promise<TeamGroup> {
-  if (!supabaseConfigured) throw new Error('Cần cấu hình Supabase để tạo nhóm.');
   return groupRpc('create_group', { p_name: name.trim() });
 }
 
 export async function joinGroup(inviteCode: string): Promise<TeamGroup> {
-  if (!supabaseConfigured) throw new Error('Cần cấu hình Supabase để tham gia nhóm.');
   return groupRpc('join_group', { p_invite_code: inviteCode.trim().toUpperCase() });
 }
 
 export async function deleteGroup(groupId: string): Promise<void> {
-  if (!supabaseConfigured) throw new Error('Cần cấu hình Supabase để xóa nhóm.');
   const { error } = await requireSupabase().rpc('delete_group', { p_group_id: groupId });
   if (error) throw error;
 }

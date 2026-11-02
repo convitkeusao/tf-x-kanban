@@ -1,11 +1,6 @@
 import { requireSupabase } from '../../api/requireSupabase';
-import { supabaseConfigured } from '../../api/supabaseClient';
-import { readLocalData } from '../../shared/localStorage';
-import { demoMembers } from '../../shared/demoData';
 import { TeamGroup } from '../groups/groupTypes';
 import { TeamMember } from './memberTypes';
-
-const membersStorageKey = 'teamflow.demo.members';
 
 type ProfileRow = {
   id: string;
@@ -35,7 +30,6 @@ function mapMember(row: ProfileRow): TeamMember {
 }
 
 export async function listMembers(groupId?: string): Promise<TeamMember[]> {
-  if (!supabaseConfigured) return readLocalData(membersStorageKey, demoMembers);
   if (!groupId) return [];
 
   const { data, error } = await requireSupabase()

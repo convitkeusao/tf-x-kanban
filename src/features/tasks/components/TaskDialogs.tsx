@@ -9,7 +9,7 @@ import { formatDueDate, initials, localDateString } from '../taskUi';
 
 type ModalProps = { onClose: () => void };
 function ModalFrame({ children, onClose, size = 'md' }: ModalProps & { children: React.ReactNode; size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' }) {
-  return <Modal opened onClose={onClose} centered size={size} radius={0} withCloseButton>{children}</Modal>;
+  return <Modal opened onClose={onClose} centered size={size} radius={0} withCloseButton={false}>{children}</Modal>;
 }
 
 export function TaskModal({ members, onClose, onSubmit }: ModalProps & { members: TeamMember[]; onSubmit: (task: NewTask) => Promise<void> }) {
@@ -36,7 +36,7 @@ export function TaskModal({ members, onClose, onSubmit }: ModalProps & { members
     <ModalFrame onClose={onClose} size="lg">
       <form onSubmit={submit}><Stack gap="sm">
         <Title order={2} size="h3" id="task-modal-title">Giao việc cho thành viên</Title>
-        <TextInput id="task-title" label="Việc cần làm" value={title} onChange={(event) => setTitle(event.currentTarget.value)} placeholder="Ví dụ: Chuẩn bị báo cáo tuần" maxLength={120} required autoFocus />
+        <TextInput id="task-title" label="Việc cần làm" value={title} onChange={(event) => setTitle(event.currentTarget.value)} placeholder="Nhập tên công việc" maxLength={120} required autoFocus />
         <Textarea id="task-prerequisites" label="Yêu cầu tiên quyết" value={prerequisites} onChange={(event) => setPrerequisites(event.currentTarget.value)} minRows={2} required />
         <Textarea id="task-input" label="Đầu vào" value={input} onChange={(event) => setInput(event.currentTarget.value)} minRows={2} required />
         <Textarea id="task-output" label="Đầu ra" value={output} onChange={(event) => setOutput(event.currentTarget.value)} minRows={2} required />
@@ -64,7 +64,7 @@ export function GroupModal({ mode, onClose, onSubmit }: ModalProps & { mode: 'cr
       <form onSubmit={submit}><Stack gap="sm">
         <Title order={2} size="h3">{mode === 'create' ? 'Tạo nhóm mới' : 'Nhập mã mời'}</Title>
         <Text size="sm" c="dimmed">{mode === 'create' ? 'Bạn sẽ trở thành trưởng nhóm và có thể chia sẻ mã mời cho các thành viên.' : 'Nhập mã mời do trưởng nhóm chia sẻ để tham gia nhóm.'}</Text>
-        <TextInput id="group-value" label={mode === 'create' ? 'Tên nhóm' : 'Mã mời'} value={value} onChange={(event) => setValue(mode === 'join' ? event.currentTarget.value.toUpperCase() : event.currentTarget.value)} placeholder={mode === 'create' ? 'Ví dụ: Nhóm thiết kế' : 'Nhập mã mời'} maxLength={mode === 'create' ? 80 : 16} minLength={mode === 'create' ? 2 : 1} required autoFocus />
+        <TextInput id="group-value" label={mode === 'create' ? 'Tên nhóm' : 'Mã mời'} value={value} onChange={(event) => setValue(mode === 'join' ? event.currentTarget.value.toUpperCase() : event.currentTarget.value)} placeholder={mode === 'create' ? 'Nhập tên nhóm' : 'Nhập mã mời'} maxLength={mode === 'create' ? 80 : 16} minLength={mode === 'create' ? 2 : 1} required autoFocus />
         {formError && <Alert color="red" role="alert">{formError}</Alert>}
         <Group justify="flex-end"><Button variant="default" type="button" onClick={onClose}>Hủy</Button><Button type="submit" loading={submitting}>{mode === 'create' ? 'Tạo nhóm' : 'Tham gia nhóm'}</Button></Group>
       </Stack></form>
@@ -128,7 +128,6 @@ export function MembersModal({ groupId, groupName, members, tasks, currentUserId
               </> : <Text size="sm">Thành viên này không có công việc chưa hoàn thành.</Text>}
               {actionError && <Alert color="red">{actionError}</Alert>}
               <Group justify="flex-end">
-                <Button variant="default" disabled={submitting} onClick={() => setRemovingMemberId(null)}>Hủy</Button>
                 <Button color="red" loading={submitting} disabled={taskHandling === 'reassign' && !reassignToId && openTasks.length > 0} onClick={async () => {
                   const hasOpenTasks = openTasks.length > 0;
                   const deleteOpenTasks = hasOpenTasks && taskHandling === 'delete';

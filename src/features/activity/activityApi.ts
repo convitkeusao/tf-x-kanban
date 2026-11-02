@@ -1,5 +1,4 @@
 import { requireSupabase } from '../../api/requireSupabase';
-import { supabaseConfigured } from '../../api/supabaseClient';
 import { ActivityLog } from './activityTypes';
 
 type ActivityLogRow = {
@@ -12,7 +11,7 @@ type ActivityLogRow = {
 };
 
 export async function listActivityLogs(groupId?: string): Promise<ActivityLog[]> {
-  if (!supabaseConfigured || !groupId) return [];
+  if (!groupId) return [];
 
   const { data, error } = await requireSupabase()
     .from('activity_logs')

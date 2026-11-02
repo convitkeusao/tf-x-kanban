@@ -28,9 +28,9 @@ export const MyTasksSection = React.memo(function MyTasksSection({ tasks, filter
   );
 });
 
-type GroupTasksSectionProps = { tasks: Task[]; totalTasks: number; counts: TaskCounts; filter: TaskViewFilter; onFilterChange: (filter: TaskViewFilter) => void; search: string; onSearchChange: (search: string) => void; sortAscending: boolean; onSortToggle: () => void; loading: boolean; isSynced: boolean; onViewDetails: (task: Task) => void };
+type GroupTasksSectionProps = { tasks: Task[]; totalTasks: number; counts: TaskCounts; filter: TaskViewFilter; onFilterChange: (filter: TaskViewFilter) => void; search: string; onSearchChange: (search: string) => void; sortAscending: boolean; onSortToggle: () => void; loading: boolean; onViewDetails: (task: Task) => void };
 
-export const GroupTasksSection = React.memo(function GroupTasksSection({ tasks, totalTasks, counts, filter, onFilterChange, search, onSearchChange, sortAscending, onSortToggle, loading, isSynced, onViewDetails }: GroupTasksSectionProps) {
+export const GroupTasksSection = React.memo(function GroupTasksSection({ tasks, totalTasks, counts, filter, onFilterChange, search, onSearchChange, sortAscending, onSortToggle, loading, onViewDetails }: GroupTasksSectionProps) {
   return (
     <Paper withBorder radius={0} style={{ overflow: 'hidden' }}>
       <Stack gap={0}>
@@ -51,7 +51,7 @@ export const GroupTasksSection = React.memo(function GroupTasksSection({ tasks, 
             : <Center mih={176} px="md"><Stack align="center" gap="xs"><Text c="violet"><Icon name="tasks" size={28} /></Text><Text fw={500}>Chưa có công việc phù hợp</Text><Text size="sm" c="dimmed" ta="center">Hãy đổi mục lọc hoặc bấm “Giao việc mới” để tạo việc.</Text></Stack></Center>}
         <Group justify="space-between" px="md" py="sm" gap="xs" style={{ borderTop: '1px solid var(--mantine-color-gray-3)' }}>
           <Text size="xs" c="dimmed">Đang hiển thị <Text component="span" fw={600} c="dark">{tasks.length}</Text> / <Text component="span" fw={600} c="dark">{totalTasks}</Text> công việc</Text>
-          <Badge color={isSynced ? 'green' : 'yellow'} variant="dot" radius={0}>{isSynced ? 'Đã đồng bộ' : 'Chỉ lưu trên thiết bị này'}</Badge>
+          <Badge color="green" variant="dot" radius={0}>Đã đồng bộ</Badge>
         </Group>
       </Stack>
     </Paper>

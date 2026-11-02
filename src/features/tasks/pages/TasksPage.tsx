@@ -1,5 +1,4 @@
 import { AppUser } from '../../../api/supabaseAuth';
-import { supabaseConfigured } from '../../../api/supabaseClient';
 import { LoadingScreen } from '../../../components/LoadingScreen';
 import { ActivityLogSection } from '../../activity/components/ActivityLogSection';
 import { NotificationBanner } from '../../notifications/NotificationBanner';
@@ -9,8 +8,8 @@ import { TasksPageHeader } from '../components/TasksPageHeader';
 import { TasksPageModals } from '../components/TasksPageModals';
 
 type Props = {
-  user: AppUser | null;
-  onSignOut?: () => void;
+  user: AppUser;
+  onSignOut: () => void;
 };
 
 export function TasksPage({ user, onSignOut }: Props) {
@@ -32,7 +31,6 @@ export function TasksPage({ user, onSignOut }: Props) {
             />
           )}
           <TasksPageHeader
-            user={user}
             groups={page.groups}
             members={page.members}
             selectedGroupId={page.selectedGroupId}
@@ -75,11 +73,10 @@ export function TasksPage({ user, onSignOut }: Props) {
               sortAscending={page.sortAscending}
               onSortToggle={page.toggleSortOrder}
               loading={page.loading}
-              isSynced={supabaseConfigured}
               onViewDetails={page.setDetailsTask}
             />
           )}
-          {supabaseConfigured && page.currentGroup && page.isManager && (
+          {page.currentGroup && page.isManager && (
             <ActivityLogSection
               logs={page.activityLogs}
               onRefresh={() => void page.loadActivityLogs(page.currentGroup!.id, page.isManager)}

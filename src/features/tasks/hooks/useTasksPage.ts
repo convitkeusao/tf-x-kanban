@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppUser } from '../../../api/supabaseAuth';
-import { supabaseConfigured } from '../../../api/supabaseClient';
 import { createGroup, deleteGroup, joinGroup, listGroups } from '../../groups/groupsApi';
 import { TeamGroup } from '../../groups/groupTypes';
 import { listActivityLogs } from '../../activity/activityApi';
@@ -10,7 +9,7 @@ import { TeamMember } from '../../members/memberTypes';
 import { createTask, listTasks, updateTask } from '../tasksApi';
 import { MyTaskFilter, NewTask, Task, TaskCounts, TaskStatus, TaskViewFilter } from '../taskTypes';
 
-export function useTasksPage(user: AppUser | null) {
+export function useTasksPage(user: AppUser) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
   const [members, setMembers] = useState<TeamMember[]>([]);
@@ -29,16 +28,14 @@ export function useTasksPage(user: AppUser | null) {
   const [detailsTask, setDetailsTask] = useState<Task | null>(null);
   const [loading, setLoading] = useState(true);
   const [initialLoading, setInitialLoading] = useState(true);
-  const [groupsLoaded, setGroupsLoaded] = useState(!user || !supabaseConfigured);
+  const [groupsLoaded, setGroupsLoaded] = useState(false);
   const [savingTaskId, setSavingTaskId] = useState<string | null>(null);
   const [error, setError] = useState('');
   const dataRequestId = useRef(0);
 
   const currentGroup = groups.find((group) => group.id === selectedGroupId);
-  const currentMember = members.find((member) => user
-    ? member.id === user.id
-    : member.role === 'Trưởng nhóm');
-  const isManager = supabaseConfigured ? currentGroup?.role === 'manager' : true;
+  const currentMember = members.find((member) => member.id === user.id);
+  const isManager = currentGroup?.role === 'manager';
 
   const loadActivityLogs = useCallback(async (groupId: string, manager: boolean, requestId = dataRequestId.current) => {
     if (groupId !== selectedGroupId || requestId !== dataRequestId.current) return;
@@ -57,7 +54,6 @@ export function useTasksPage(user: AppUser | null) {
   }, [selectedGroupId]);
 
   useEffect(() => {
-    if (!user || !supabaseConfigured) return;
     let active = true;
     listGroups(user.id)
       .then((nextGroups) => {
@@ -80,15 +76,15 @@ export function useTasksPage(user: AppUser | null) {
   }, [user]);
 
   useEffect(() => {
-    if (user && selectedGroupId) {
+    if (selectedGroupId) {
       window.localStorage.setItem(`teamflow.active-group.${user.id}`, selectedGroupId);
     }
   }, [selectedGroupId, user]);
 
   const loadData = useCallback(async () => {
-    if (user && supabaseConfigured && !groupsLoaded) return;
+    if (!groupsLoaded) return;
     const requestId = ++dataRequestId.current;
-    if (supabaseConfigured && !selectedGroupId) {
+    if (!selectedGroupId) {
       setTasks([]);
       setMembers([]);
       setActivityLogs([]);
@@ -247,13 +243,13 @@ export function useTasksPage(user: AppUser | null) {
     setMembers((current) => current.map((member) => ({
       ...member,
       isManager: member.id === targetUserId,
-      role: member.id === targetUserId ? 'Trưởng nhóm' : member.id === user?.id ? 'Thành viên' : member.role,
+      role: member.id === targetUserId ? 'Trưởng nhóm' : member.id === user.id ? 'Thành viên' : member.role,
     })));
     setActivityLogs([]);
   }
 
   async function handleLeaveGroup(transferToId: string | null) {
-    if (!currentGroup || !user) throw new Error('Không tìm thấy nhóm hoặc tài khoản hiện tại.');
+    if (!currentGroup) throw new Error('Không tìm thấy nhóm hiện tại.');
     if (isManager) throw new Error('Hãy chuyển quyền trưởng nhóm trước khi rời nhóm.');
     await leaveGroup(currentGroup.id, transferToId);
     const remainingGroups = groups.filter((group) => group.id !== currentGroup.id);
@@ -270,9 +266,9 @@ export function useTasksPage(user: AppUser | null) {
     }
   }
 
-  const canUpdateTask = useCallback((task: Task) => !supabaseConfigured
-    || Boolean(user && (user.id === task.assigneeId || currentMember?.isManager)),
-  [currentMember?.isManager, user]);
+  const canUpdateTask = useCallback((task: Task) => (
+    user.id === task.assigneeId || Boolean(currentMember?.isManager)
+  ), [currentMember?.isManager, user.id]);
   const toggleSortOrder = useCallback(() => setSortAscending((current) => !current), []);
 
   return {

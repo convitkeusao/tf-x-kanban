@@ -1,6 +1,6 @@
 # Teamflow
 
-Ứng dụng giao việc và theo dõi tiến độ nhóm. Ứng dụng sử dụng Supabase Auth để đăng nhập và Supabase Database để lưu hồ sơ thành viên, công việc và trạng thái. Khi chưa cấu hình Supabase, ứng dụng chạy với dữ liệu mẫu trên trình duyệt.
+Ứng dụng giao việc và theo dõi tiến độ nhóm. Ứng dụng sử dụng Supabase Auth để đăng nhập và Supabase Database để lưu hồ sơ thành viên, công việc và trạng thái. Cần cấu hình Supabase trước khi sử dụng; ứng dụng không khởi tạo dữ liệu mẫu.
 
 ## Chạy ứng dụng
 
@@ -29,7 +29,8 @@ Vite sẽ chạy máy chủ phát triển tại `http://localhost:5173`. Dùng `
 4. Vào **SQL Editor**, chạy nội dung [supabase/schema.sql](./supabase/schema.sql) để tạo/cập nhật bảng, trigger tạo hồ sơ thành viên, nhóm, mã mời, báo cáo hoàn thành và chính sách RLS. Nếu đã có công việc Supabase cũ, script giữ lại và đưa chúng vào nhóm “Nhóm hiện tại”.
 5. Trong **Authentication → Providers**, bật nhà cung cấp **Email**. Trong **Authentication → URL Configuration**, đặt Site URL là URL triển khai (ví dụ `https://congviecnhom2030.onrender.com`) và thêm cả URL triển khai lẫn URL phát triển (`http://localhost:5173`) vào Redirect URLs.
 6. Người dùng có thể đăng ký bằng email và mật khẩu ngay trên màn hình đăng nhập. Nếu bật xác minh email trong cài đặt Email của Supabase, họ cần mở liên kết được gửi đến hộp thư trước khi đăng nhập; nếu tắt xác minh, tài khoản sẽ được đăng nhập ngay sau khi tạo.
-7. Khởi động lại ứng dụng sau khi chỉnh `.env`.
+7. Người dùng đã có tài khoản có thể chọn **Quên mật khẩu?** trên màn hình đăng nhập để nhận email đặt lại mật khẩu. Liên kết sẽ mở ứng dụng để nhập mật khẩu mới; URL ứng dụng cần nằm trong danh sách Redirect URLs ở bước trên.
+8. Khởi động lại ứng dụng sau khi chỉnh `.env`.
 
 Để người khác tham gia, mở nhóm rồi chọn **Mã mời** và gửi mã cho họ. Họ có thể tự đăng ký tài khoản bằng email trên ứng dụng, xác minh email nếu được yêu cầu, rồi chọn **Tham gia nhóm**. Một tài khoản có thể tham gia nhiều nhóm và chuyển nhóm bằng bộ chọn.
 
@@ -63,7 +64,6 @@ Các bản ghi đang ở Appwrite không được tự động chuyển sang Sup
 - `src/features/auth`: giao diện xác thực và hook phiên đăng nhập.
 - `src/features/landing`: màn hình giới thiệu.
 - `src/api`: khởi tạo Supabase, xác thực và tiện ích truy cập backend.
-- `src/shared`: dữ liệu mẫu và tiện ích dùng chung.
 - `src/app`: cấu hình dùng chung cấp ứng dụng.
 
 ## Kiểm tra build

@@ -60,6 +60,20 @@ export async function signUp(name: string, email: string, password: string): Pro
   };
 }
 
+export async function sendPasswordResetEmail(email: string): Promise<void> {
+  const { error } = await requireSupabase().auth.resetPasswordForEmail(email, {
+    redirectTo: window.location.origin,
+  });
+  if (error) throw error;
+}
+
+export async function updatePassword(password: string): Promise<AppUser> {
+  const { data, error } = await requireSupabase().auth.updateUser({ password });
+  if (error) throw error;
+  if (!data.user) throw new Error('Supabase không trả về thông tin tài khoản.');
+  return mapUser(data.user);
+}
+
 export async function signOut(): Promise<void> {
   const { error } = await requireSupabase().auth.signOut();
   if (error) throw error;

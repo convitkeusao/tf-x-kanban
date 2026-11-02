@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Alert, Button, Stack } from '@mantine/core';
+import { Alert, Button, Container, Stack, Text, Title } from '@mantine/core';
 import { supabaseConfigured } from './api/supabaseClient';
 import { LoadingScreen } from './components/LoadingScreen';
 import { SupabaseAuth } from './features/auth/SupabaseAuth';
@@ -11,6 +11,9 @@ function App() {
   const { user, setUser, authStatus, authError, signOutCurrentUser } = useAuthSession();
   const [authMode, setAuthMode] = useState<'sign-in' | 'sign-up'>('sign-in');
   const [showAuth, setShowAuth] = useState(false);
+  const [passwordRecovery, setPasswordRecovery] = useState(
+    () => new URLSearchParams(window.location.hash.slice(1)).get('type') === 'recovery',
+  );
 
   if (authStatus === 'loading') {
     return <LoadingScreen message="Đang kiểm tra phiên đăng nhập..." />;
@@ -23,7 +26,32 @@ function App() {
       </Stack>
     );
   }
-  if (supabaseConfigured && !user) {
+  if (!supabaseConfigured) {
+    return (
+      <Container size="sm" mih="100vh" py="xl" style={{ display: 'flex', alignItems: 'center' }}>
+        <Stack w="100%" gap="md">
+          <Title order={1} size="h2">Cần cấu hình Supabase</Title>
+          <Alert color="yellow" title="Chưa kết nối cơ sở dữ liệu">
+            Thêm VITE_SUPABASE_URL và VITE_SUPABASE_PUBLISHABLE_KEY vào file .env, sau đó khởi động lại ứng dụng.
+          </Alert>
+          <Text size="sm" c="dimmed">Ứng dụng không dùng dữ liệu mẫu hoặc lưu dữ liệu công việc trên thiết bị.</Text>
+        </Stack>
+      </Container>
+    );
+  }
+  if (passwordRecovery) {
+    return (
+      <SupabaseAuth
+        initialMode="reset-password"
+        onSignedIn={(nextUser) => {
+          setUser(nextUser);
+          setPasswordRecovery(false);
+          window.history.replaceState(null, '', window.location.pathname + window.location.search);
+        }}
+      />
+    );
+  }
+  if (!user) {
     if (!showAuth) {
       return (
         <LandingPage
@@ -49,7 +77,7 @@ function App() {
   return (
     <TasksPage
       user={user}
-      onSignOut={supabaseConfigured ? signOutCurrentUser : undefined}
+      onSignOut={signOutCurrentUser}
     />
   );
 }

@@ -1,11 +1,5 @@
 import { requireSupabase } from '../../api/requireSupabase';
-import { supabaseConfigured } from '../../api/supabaseClient';
-import { demoTasks, demoMembers } from '../../shared/demoData';
-import { readLocalData, saveLocalData } from '../../shared/localStorage';
 import { Task, TaskUpdate, NewTask } from './taskTypes';
-
-const tasksStorageKey = 'teamflow.demo.tasks';
-const membersStorageKey = 'teamflow.demo.members';
 
 type TaskRow = {
   id: string;
@@ -43,12 +37,6 @@ function mapTask(row: TaskRow): Task {
 }
 
 export async function listTasks(groupId?: string): Promise<Task[]> {
-  if (!supabaseConfigured) {
-    return readLocalData(tasksStorageKey, demoTasks).map((task) => ({
-      ...task,
-      prerequisites: task.prerequisites?.trim() || 'Không có yêu cầu tiên quyết.',
-    }));
-  }
   if (!groupId) return [];
 
   const { data, error } = await requireSupabase()
@@ -67,18 +55,6 @@ export async function createTask(task: NewTask, groupId?: string): Promise<Task>
     throw new Error('Vui lòng điền đầy đủ các trường bắt buộc.');
   }
 
-  if (!supabaseConfigured) {
-    const tasks = readLocalData(tasksStorageKey, demoTasks);
-    const member = readLocalData(membersStorageKey, demoMembers).find((item) => item.id === task.assigneeId);
-    const created: Task = {
-      ...task,
-      assigneeName: member?.name ?? task.assigneeName,
-      id: `task-${Date.now()}`,
-      createdAt: new Date().toISOString(),
-    };
-    saveLocalData(tasksStorageKey, [created, ...tasks]);
-    return created;
-  }
   if (!groupId) throw new Error('Hãy chọn một nhóm trước khi giao việc.');
 
   const { data, error } = await requireSupabase()
@@ -109,14 +85,6 @@ export async function updateTask(id: string, update: TaskUpdate, groupId?: strin
     throw new Error('Vui lòng nhập chi tiết báo cáo trước khi hoàn thành.');
   }
 
-  if (!supabaseConfigured) {
-    const tasks = readLocalData(tasksStorageKey, demoTasks);
-    const index = tasks.findIndex((task) => task.id === id);
-    if (index < 0) throw new Error('Không tìm thấy công việc cần cập nhật.');
-    tasks[index] = { ...tasks[index], status: update.status, completionReport };
-    saveLocalData(tasksStorageKey, tasks);
-    return tasks[index];
-  }
   if (!groupId) throw new Error('Hãy chọn một nhóm trước khi cập nhật công việc.');
 
   const { data, error } = await requireSupabase()
