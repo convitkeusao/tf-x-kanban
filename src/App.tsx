@@ -1,46 +1,55 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
+import { Alert, Button, Stack } from '@mantine/core';
 import { supabaseConfigured } from './api/supabaseClient';
-import { AppUser, getCurrentUser, signOut } from './api/supabaseAuth';
-import { SupabaseAuth } from './components/SupabaseAuth';
-import { TasksPage } from './pages/TasksPage';
+import { LoadingScreen } from './components/LoadingScreen';
+import { SupabaseAuth } from './features/auth/SupabaseAuth';
+import { LandingPage } from './features/landing/LandingPage';
+import { TasksPage } from './features/tasks/pages/TasksPage';
+import { useAuthSession } from './features/auth/useAuthSession';
 
 function App() {
-  const [user, setUser] = useState<AppUser | null>(null);
-  const [authStatus, setAuthStatus] = useState<'loading' | 'ready'>(
-    supabaseConfigured ? 'loading' : 'ready',
-  );
-  const [authError, setAuthError] = useState('');
-
-  useEffect(() => {
-    if (!supabaseConfigured) return;
-    getCurrentUser()
-      .then(setUser)
-      .catch((caught: unknown) => {
-        setAuthError(caught instanceof Error ? caught.message : 'Không thể kiểm tra phiên đăng nhập.');
-      })
-      .finally(() => setAuthStatus('ready'));
-  }, []);
-
-  async function handleSignOut() {
-    try {
-      await signOut();
-      setUser(null);
-    } catch (caught) {
-      setAuthError(caught instanceof Error ? caught.message : 'Không thể đăng xuất.');
-    }
-  }
+  const { user, setUser, authStatus, authError, signOutCurrentUser } = useAuthSession();
+  const [authMode, setAuthMode] = useState<'sign-in' | 'sign-up'>('sign-in');
+  const [showAuth, setShowAuth] = useState(false);
 
   if (authStatus === 'loading') {
-    return <main className="auth-page"><p role="status">Đang kiểm tra phiên đăng nhập...</p></main>;
+    return <LoadingScreen message="Đang kiểm tra phiên đăng nhập..." />;
   }
   if (authError) {
-    return <main className="auth-page"><p className="form-error" role="alert">{authError}</p><button className="secondary-button" onClick={() => window.location.reload()}>Thử lại</button></main>;
+    return (
+      <Stack mih="100vh" align="center" justify="center" p="md" gap="md">
+        <Alert color="red" role="alert">{authError}</Alert>
+        <Button variant="default" onClick={() => window.location.reload()}>Thử lại</Button>
+      </Stack>
+    );
   }
-  if (supabaseConfigured && !user) return <SupabaseAuth onSignedIn={setUser} />;
+  if (supabaseConfigured && !user) {
+    if (!showAuth) {
+      return (
+        <LandingPage
+          onSignIn={() => {
+            setAuthMode('sign-in');
+            setShowAuth(true);
+          }}
+          onSignUp={() => {
+            setAuthMode('sign-up');
+            setShowAuth(true);
+          }}
+        />
+      );
+    }
+    return (
+      <SupabaseAuth
+        initialMode={authMode}
+        onSignedIn={setUser}
+        onBack={() => setShowAuth(false)}
+      />
+    );
+  }
   return (
     <TasksPage
       user={user}
-      onSignOut={supabaseConfigured ? handleSignOut : undefined}
+      onSignOut={supabaseConfigured ? signOutCurrentUser : undefined}
     />
   );
 }

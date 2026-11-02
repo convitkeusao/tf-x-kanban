@@ -1,6 +1,3 @@
-import React from 'react';
-import './NotificationBanner.css';
-
 type Props = {
   message: string;
   onRetry: () => void;
@@ -9,10 +6,12 @@ type Props = {
 
 export function NotificationBanner({ message, onRetry, onDismiss }: Props) {
   return (
-    <div className="notification-banner" role="alert">
-      <span>{message}</span>
-      <button type="button" onClick={onRetry}>Thử lại</button>
-      <button type="button" onClick={onDismiss} aria-label="Đóng thông báo">×</button>
-    </div>
+    <Alert color="red" title={message} role="alert">
+      <Group mt="xs" gap="xs">
+        <Button size="xs" color="red" variant="light" onClick={onRetry}>Thử lại</Button>
+        <Button size="xs" color="red" variant="subtle" onClick={onDismiss}>Đóng</Button>
+      </Group>
+    </Alert>
   );
 }
+import { Alert, Button, Group } from '@mantine/core';

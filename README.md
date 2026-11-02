@@ -9,6 +9,12 @@ npm install
 npm start
 ```
 
+Vite sẽ chạy máy chủ phát triển tại `http://localhost:5173`. Dùng `npm run build` để tạo bản triển khai trong thư mục `build/`.
+
+## Giao diện
+
+Ứng dụng dùng Mantine làm thư viện giao diện chính. `MantineProvider` và theme dùng chung nằm tại `src/app/providers.tsx`; theme đặt góc bo mặc định bằng 0. CSS riêng chỉ dành cho bố cục đặc thù.
+
 ## Cấu hình Supabase
 
 1. Tạo project Supabase.
@@ -16,16 +22,16 @@ npm start
 3. Tạo file `.env` ở thư mục gốc từ mẫu `.env.example`, rồi điền:
 
    ```env
-   REACT_APP_SUPABASE_URL=https://your-project.supabase.co
-   REACT_APP_SUPABASE_PUBLISHABLE_KEY=your-publishable-key
+   VITE_SUPABASE_URL=https://your-project.supabase.co
+   VITE_SUPABASE_PUBLISHABLE_KEY=your-publishable-key
    ```
 
 4. Vào **SQL Editor**, chạy nội dung [supabase/schema.sql](./supabase/schema.sql) để tạo/cập nhật bảng, trigger tạo hồ sơ thành viên, nhóm, mã mời, báo cáo hoàn thành và chính sách RLS. Nếu đã có công việc Supabase cũ, script giữ lại và đưa chúng vào nhóm “Nhóm hiện tại”.
-5. Trong **Authentication → URL Configuration**, đặt Site URL là `http://localhost:3010` (hoặc URL triển khai) và thêm URL đó vào Redirect URLs.
-6. Đăng nhập vào ứng dụng. Mỗi tài khoản có thể tạo nhóm và trở thành trưởng nhóm, hoặc nhập mã mời để tham gia nhóm.
+5. Trong **Authentication → Providers**, bật nhà cung cấp **Email**. Trong **Authentication → URL Configuration**, đặt Site URL là URL triển khai (ví dụ `https://congviecnhom2030.onrender.com`) và thêm cả URL triển khai lẫn URL phát triển (`http://localhost:5173`) vào Redirect URLs.
+6. Người dùng có thể đăng ký bằng email và mật khẩu ngay trên màn hình đăng nhập. Nếu bật xác minh email trong cài đặt Email của Supabase, họ cần mở liên kết được gửi đến hộp thư trước khi đăng nhập; nếu tắt xác minh, tài khoản sẽ được đăng nhập ngay sau khi tạo.
 7. Khởi động lại ứng dụng sau khi chỉnh `.env`.
 
-Để người khác tham gia, mở nhóm rồi chọn **Mã mời** và gửi mã cho họ. Họ cần có tài khoản Supabase trước, sau đó dùng **Tham gia nhóm**. Một tài khoản có thể tham gia nhiều nhóm và chuyển nhóm bằng bộ chọn.
+Để người khác tham gia, mở nhóm rồi chọn **Mã mời** và gửi mã cho họ. Họ có thể tự đăng ký tài khoản bằng email trên ứng dụng, xác minh email nếu được yêu cầu, rồi chọn **Tham gia nhóm**. Một tài khoản có thể tham gia nhiều nhóm và chuyển nhóm bằng bộ chọn.
 
 ## Quyền truy cập
 
@@ -50,13 +56,15 @@ Các bản ghi đang ở Appwrite không được tự động chuyển sang Sup
 
 ## Cấu trúc mã nguồn
 
-- `src/features/tasks`: kiểu dữ liệu, API và thành phần giao diện công việc.
+- `src/features/tasks`: trang tại `pages`, hook tại `hooks`, thành phần giao diện tại `components`, API và kiểu dữ liệu công việc.
 - `src/features/groups`: API và kiểu dữ liệu nhóm.
 - `src/features/members`: API, kiểu dữ liệu và luồng quản lý thành viên.
 - `src/features/activity`: API và kiểu dữ liệu nhật ký.
+- `src/features/auth`: giao diện xác thực và hook phiên đăng nhập.
+- `src/features/landing`: màn hình giới thiệu.
 - `src/api`: khởi tạo Supabase, xác thực và tiện ích truy cập backend.
 - `src/shared`: dữ liệu mẫu và tiện ích dùng chung.
-- `src/pages`: trang điều phối các feature và stylesheet của trang.
+- `src/app`: cấu hình dùng chung cấp ứng dụng.
 
 ## Kiểm tra build
 

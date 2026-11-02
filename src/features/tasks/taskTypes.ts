@@ -2,6 +2,9 @@ import { TeamMember } from '../members/memberTypes';
 
 export type TaskStatus = 'todo' | 'in_progress' | 'done';
 export type TaskPriority = 'low' | 'medium' | 'high';
+export type TaskViewFilter = 'all' | TaskStatus;
+export type MyTaskFilter = 'active' | 'done';
+export type TaskCounts = Record<TaskViewFilter, number>;
 
 export type Task = {
   id: string;

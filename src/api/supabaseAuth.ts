@@ -7,6 +7,11 @@ export type AppUser = {
   email: string;
 };
 
+export type SignUpResult = {
+  user: AppUser;
+  emailConfirmationRequired: boolean;
+};
+
 function requireSupabase() {
   if (!supabase) throw new Error('Thiếu cấu hình Supabase URL hoặc publishable key.');
   return supabase;
@@ -36,6 +41,23 @@ export async function signIn(email: string, password: string): Promise<AppUser> 
   if (error) throw error;
   if (!data.user) throw new Error('Supabase không trả về thông tin tài khoản.');
   return mapUser(data.user);
+}
+
+export async function signUp(name: string, email: string, password: string): Promise<SignUpResult> {
+  const { data, error } = await requireSupabase().auth.signUp({
+    email,
+    password,
+    options: {
+      emailRedirectTo: window.location.origin,
+      data: { name },
+    },
+  });
+  if (error) throw error;
+  if (!data.user) throw new Error('Supabase không trả về thông tin tài khoản mới.');
+  return {
+    user: mapUser(data.user),
+    emailConfirmationRequired: !data.session,
+  };
 }
 
 export async function signOut(): Promise<void> {
