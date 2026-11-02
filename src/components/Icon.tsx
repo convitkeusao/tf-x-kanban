@@ -11,7 +11,9 @@ export type IconName =
   | 'team'
   | 'logout'
   | 'key'
-  | 'invite';
+  | 'invite'
+  | 'trash'
+  | 'eye';
 
 const iconPaths: Record<IconName, React.ReactNode> = {
   tasks: <><rect x="4" y="4" width="16" height="16" rx="3" /><path d="M8 9h8M8 13h8M8 17h5" /></>,
@@ -25,6 +27,8 @@ const iconPaths: Record<IconName, React.ReactNode> = {
   logout: <><path d="M10 17l5-5-5-5M15 12H3" /><path d="M12 3h6a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-6" /></>,
   key: <><circle cx="8" cy="15" r="4" /><path d="m11 12 9-9M16 7l2 2M18 5l2 2" /></>,
   invite: <><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3 7 9 6 9-6" /></>,
+  trash: <><path d="M3 6h18M8 6V4h8v2m3 0-1 14H6L5 6m4 4v6m6-6v6" /></>,
+  eye: <><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" /><circle cx="12" cy="12" r="2.5" /></>,
 };
 
 export function Icon({ name, size = 18 }: { name: IconName; size?: number }) {
