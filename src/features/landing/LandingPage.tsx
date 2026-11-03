@@ -1,6 +1,8 @@
+import type { ReactNode } from 'react';
 import { Anchor, Button, Card, Container, Group, Stack, Text, Title } from '@mantine/core';
 
 type Props = {
+  installButton: ReactNode;
   onSignIn: () => void;
   onSignUp: () => void;
 };
@@ -11,7 +13,7 @@ const features = [
   { title: 'Phối hợp trong một nơi', description: 'Tạo nhóm, mời thành viên và cùng cập nhật công việc.' },
 ];
 
-export function LandingPage({ onSignIn, onSignUp }: Props) {
+export function LandingPage({ installButton, onSignIn, onSignUp }: Props) {
   return (
     <Stack mih="100vh" gap={0} bg="white">
       <Container size="xl" w="100%">
@@ -20,6 +22,7 @@ export function LandingPage({ onSignIn, onSignUp }: Props) {
             <Group gap="sm" fw={700}><img src={`${import.meta.env.BASE_URL}logo.png`} alt="" width={32} height={32} /><Text inherit>Teamflow</Text></Group>
           </Anchor>
           <Group gap="sm">
+            {installButton}
             <Button variant="subtle" size="sm" onClick={onSignIn}>Đăng nhập</Button>
             <Button size="sm" onClick={onSignUp}>Đăng ký</Button>
           </Group>

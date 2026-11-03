@@ -1,10 +1,12 @@
 import { Alert, Button, Group, Select, Stack } from '@mantine/core';
+import type { ReactNode } from 'react';
 import { Icon } from '../../../components/Icon';
 import { TeamGroup } from '../../groups/groupTypes';
 import { TeamMember } from '../../members/memberTypes';
 import { AppUser } from '../../../api/supabaseAuth';
 
 type Props = {
+  installButton: ReactNode;
   groups: TeamGroup[];
   members: TeamMember[];
   selectedGroupId: string;
@@ -21,7 +23,7 @@ type Props = {
   onCreateTask: () => void;
 };
 
-export function TasksPageHeader({ groups, members, selectedGroupId, currentGroup, isManager, onSignOut, onCreateGroup, onJoinGroup, onShowAccount, onSelectGroup, onDeleteGroup, onShowInvite, onShowMembers, onCreateTask }: Props) {
+export function TasksPageHeader({ installButton, groups, members, selectedGroupId, currentGroup, isManager, onSignOut, onCreateGroup, onJoinGroup, onShowAccount, onSelectGroup, onDeleteGroup, onShowInvite, onShowMembers, onCreateTask }: Props) {
   return (
     <Stack gap="md">
       {!groups.length && <Alert color="yellow" title="Bạn chưa có nhóm">Tạo nhóm mới hoặc nhập mã mời để bắt đầu.</Alert>}
@@ -31,6 +33,7 @@ export function TasksPageHeader({ groups, members, selectedGroupId, currentGroup
           <Button variant="default" leftSection={<Icon name="key" />} onClick={onJoinGroup}>Tham gia nhóm</Button>
           <Button variant="subtle" leftSection={<Icon name="user" />} onClick={onShowAccount}>Tài khoản</Button>
           <Button variant="subtle" leftSection={<Icon name="logout" />} onClick={onSignOut}>Đăng xuất</Button>
+          {installButton}
         </Group>
         <Group gap="xs" align="end" aria-label="Thao tác trong nhóm">
           {groups.length > 0 && <Select label="Nhóm" aria-label="Danh sách nhóm" w={{ base: '100%', sm: 280 }} data={groups.map((group) => ({ value: group.id, label: group.name }))} value={selectedGroupId} onChange={(value) => onSelectGroup(value || '')} />}

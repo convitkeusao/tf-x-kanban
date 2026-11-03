@@ -97,6 +97,21 @@ create index if not exists group_members_user_created_at_idx on public.group_mem
 create index if not exists group_members_group_created_at_idx on public.group_members(group_id, created_at);
 create index if not exists activity_logs_group_created_at_idx on public.activity_logs(group_id, created_at desc);
 
+do $$
+begin
+  if exists (select 1 from pg_publication where pubname = 'supabase_realtime')
+    and not exists (
+      select 1
+      from pg_publication_tables
+      where pubname = 'supabase_realtime'
+        and schemaname = 'public'
+        and tablename = 'tasks'
+    ) then
+    alter publication supabase_realtime add table public.tasks;
+  end if;
+end
+$$;
+
 drop index if exists public.tasks_due_date_idx;
 drop index if exists public.tasks_group_id_idx;
 drop index if exists public.group_members_user_id_idx;
@@ -414,9 +429,21 @@ begin
     raise exception 'Mã mời không hợp lệ.';
   end if;
 
+  if exists (
+    select 1
+    from public.group_members
+    where group_id = target_group_id and user_id = auth.uid()
+  ) then
+    raise exception 'Bạn đã là thành viên của nhóm này rồi.';
+  end if;
+
   insert into public.group_members (group_id, user_id, role)
   values (target_group_id, auth.uid(), 'member')
   on conflict (group_id, user_id) do nothing;
+
+  if not found then
+    raise exception 'Bạn đã là thành viên của nhóm này rồi.';
+  end if;
 
   return query
   select g.id, g.name, g.invite_code, gm.role

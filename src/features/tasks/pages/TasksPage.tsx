@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { AppUser } from '../../../api/supabaseAuth';
 import { LoadingScreen } from '../../../components/LoadingScreen';
 import { ActivityLogSection } from '../../activity/components/ActivityLogSection';
@@ -6,13 +7,15 @@ import { useTasksPage } from '../hooks/useTasksPage';
 import { GroupTasksSection, MyTasksSection } from '../components/TaskSections';
 import { TasksPageHeader } from '../components/TasksPageHeader';
 import { TasksPageModals } from '../components/TasksPageModals';
+import { TaskNotificationControls } from '../../notifications/TaskNotificationControls';
 
 type Props = {
   user: AppUser;
+  installButton: ReactNode;
   onSignOut: () => void;
 };
 
-export function TasksPage({ user, onSignOut }: Props) {
+export function TasksPage({ user, installButton, onSignOut }: Props) {
   const page = useTasksPage(user);
 
   if (page.initialLoading) {
@@ -31,6 +34,7 @@ export function TasksPage({ user, onSignOut }: Props) {
             />
           )}
           <TasksPageHeader
+            installButton={installButton}
             groups={page.groups}
             members={page.members}
             selectedGroupId={page.selectedGroupId}
@@ -44,11 +48,12 @@ export function TasksPage({ user, onSignOut }: Props) {
               page.setSelectedGroupId(groupId);
               page.setFilter('all');
             }}
-            onDeleteGroup={() => void page.handleDeleteGroup()}
+            onDeleteGroup={() => page.setShowDeleteGroupConfirm(true)}
             onShowInvite={() => page.setShowInviteModal(true)}
             onShowMembers={() => page.setShowMembersModal(true)}
             onCreateTask={() => page.setShowTaskModal(true)}
           />
+          <TaskNotificationControls userId={user.id} />
 
           <MyTasksSection
             tasks={page.myTasks}
@@ -90,6 +95,7 @@ export function TasksPage({ user, onSignOut }: Props) {
       </main>
       <TasksPageModals
         showTaskModal={page.showTaskModal}
+        showDeleteGroupConfirm={page.showDeleteGroupConfirm}
         groupModalMode={page.groupModalMode}
         showInviteModal={page.showInviteModal}
         showMembersModal={page.showMembersModal}
@@ -103,6 +109,8 @@ export function TasksPage({ user, onSignOut }: Props) {
         tasks={page.tasks}
         isManager={page.isManager}
         onCloseTask={() => page.setShowTaskModal(false)}
+        onCloseDeleteGroupConfirm={() => page.setShowDeleteGroupConfirm(false)}
+        onConfirmDeleteGroup={page.handleDeleteGroup}
         onGroupAction={page.handleGroupAction}
         onCloseGroup={() => page.setGroupModalMode(null)}
         onCloseInvite={() => page.setShowInviteModal(false)}

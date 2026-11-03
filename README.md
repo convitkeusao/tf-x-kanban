@@ -26,11 +26,12 @@ Vite sẽ chạy máy chủ phát triển tại `http://localhost:5173`. Dùng `
    VITE_SUPABASE_PUBLISHABLE_KEY=your-publishable-key
    ```
 
-4. Vào **SQL Editor**, chạy nội dung [supabase/schema.sql](./supabase/schema.sql) để tạo/cập nhật bảng, trigger tạo hồ sơ thành viên, nhóm, mã mời, báo cáo hoàn thành và chính sách RLS. Nếu đã có công việc Supabase cũ, script giữ lại và đưa chúng vào nhóm “Nhóm hiện tại”.
+4. Vào **SQL Editor**, chạy nội dung [supabase/schema.sql](./supabase/schema.sql) để tạo/cập nhật bảng, trigger tạo hồ sơ thành viên, nhóm, mã mời, báo cáo hoàn thành, chính sách RLS và publication realtime cho bảng công việc. Nếu đã có công việc Supabase cũ, script giữ lại và đưa chúng vào nhóm “Nhóm hiện tại”. Khi cập nhật ứng dụng, chạy lại script để cập nhật hàm RPC; người đã ở trong nhóm sẽ không thể tham gia nhóm đó lần nữa bằng mã mời.
 5. Trong **Authentication → Providers**, bật nhà cung cấp **Email**. Trong **Authentication → URL Configuration**, đặt Site URL là URL triển khai (ví dụ `https://congviecnhom2030.onrender.com`) và thêm cả URL triển khai lẫn URL phát triển (`http://localhost:5173`) vào Redirect URLs.
 6. Người dùng có thể đăng ký bằng email và mật khẩu ngay trên màn hình đăng nhập. Nếu bật xác minh email trong cài đặt Email của Supabase, họ cần mở liên kết được gửi đến hộp thư trước khi đăng nhập; nếu tắt xác minh, tài khoản sẽ được đăng nhập ngay sau khi tạo.
 7. Người dùng đã có tài khoản có thể chọn **Quên mật khẩu?** trên màn hình đăng nhập để nhận email đặt lại mật khẩu. Liên kết sẽ mở ứng dụng để nhập mật khẩu mới; URL ứng dụng cần nằm trong danh sách Redirect URLs ở bước trên.
-8. Khởi động lại ứng dụng sau khi chỉnh `.env`.
+8. Người dùng có thể cài Teamflow từ nút **Cài đặt / ghim ứng dụng**; trình duyệt/ hệ điều hành sẽ yêu cầu xác nhận và cho phép ghim vào thanh tác vụ. Nút **Bật thông báo công việc** yêu cầu quyền trình duyệt và nhận thông báo realtime khi có công việc mới được giao cho tài khoản đó. Ứng dụng hoặc tab cần đang mở; thông báo khi đã đóng hoàn toàn cần cấu hình thêm dịch vụ Web Push phía server.
+9. Khởi động lại ứng dụng sau khi chỉnh `.env`.
 
 Để người khác tham gia, mở nhóm rồi chọn **Mã mời** và gửi mã cho họ. Họ có thể tự đăng ký tài khoản bằng email trên ứng dụng, xác minh email nếu được yêu cầu, rồi chọn **Tham gia nhóm**. Một tài khoản có thể tham gia nhiều nhóm và chuyển nhóm bằng bộ chọn.
 

@@ -20,6 +20,7 @@ export function useTasksPage(user: AppUser) {
   const [search, setSearch] = useState('');
   const [sortAscending, setSortAscending] = useState(true);
   const [showTaskModal, setShowTaskModal] = useState(false);
+  const [showDeleteGroupConfirm, setShowDeleteGroupConfirm] = useState(false);
   const [showAccountModal, setShowAccountModal] = useState(false);
   const [showMembersModal, setShowMembersModal] = useState(false);
   const [groupModalMode, setGroupModalMode] = useState<'create' | 'join' | null>(null);
@@ -202,29 +203,18 @@ export function useTasksPage(user: AppUser) {
 
   async function handleDeleteGroup() {
     if (!currentGroup || !isManager) return;
-    const confirmed = window.confirm(
-      `Xóa vĩnh viễn nhóm "${currentGroup.name}"? Tất cả công việc, thành viên và nhật ký của nhóm cũng sẽ bị xóa. Thao tác này không thể hoàn tác.`,
-    );
-    if (!confirmed) return;
-
-    setError('');
-    try {
-      await deleteGroup(currentGroup.id);
-      const remainingGroups = groups.filter((group) => group.id !== currentGroup.id);
-      setGroups(remainingGroups);
-      setSelectedGroupId(remainingGroups[0]?.id || '');
-      setTasks([]);
-      setMembers([]);
-      setActivityLogs([]);
-      if (user) {
-        if (remainingGroups.length) {
-          window.localStorage.setItem(`teamflow.active-group.${user.id}`, remainingGroups[0].id);
-        } else {
-          window.localStorage.removeItem(`teamflow.active-group.${user.id}`);
-        }
-      }
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'Không thể xóa nhóm.');
+    await deleteGroup(currentGroup.id);
+    const remainingGroups = groups.filter((group) => group.id !== currentGroup.id);
+    setGroups(remainingGroups);
+    setSelectedGroupId(remainingGroups[0]?.id || '');
+    setTasks([]);
+    setMembers([]);
+    setActivityLogs([]);
+    setShowDeleteGroupConfirm(false);
+    if (remainingGroups.length) {
+      window.localStorage.setItem(`teamflow.active-group.${user.id}`, remainingGroups[0].id);
+    } else {
+      window.localStorage.removeItem(`teamflow.active-group.${user.id}`);
     }
   }
 
@@ -287,6 +277,8 @@ export function useTasksPage(user: AppUser) {
     sortAscending,
     showTaskModal,
     setShowTaskModal,
+    showDeleteGroupConfirm,
+    setShowDeleteGroupConfirm,
     showAccountModal,
     setShowAccountModal,
     showMembersModal,

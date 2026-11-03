@@ -6,9 +6,12 @@ import { SupabaseAuth } from './features/auth/SupabaseAuth';
 import { LandingPage } from './features/landing/LandingPage';
 import { TasksPage } from './features/tasks/pages/TasksPage';
 import { useAuthSession } from './features/auth/useAuthSession';
+import { usePwaInstall } from './app/usePwaInstall';
+import { PwaInstallButton } from './components/PwaInstallButton';
 
 function App() {
   const { user, setUser, authStatus, authError, signOutCurrentUser } = useAuthSession();
+  const pwaInstall = usePwaInstall();
   const [authMode, setAuthMode] = useState<'sign-in' | 'sign-up'>('sign-in');
   const [showAuth, setShowAuth] = useState(false);
   const [passwordRecovery, setPasswordRecovery] = useState(
@@ -55,6 +58,7 @@ function App() {
     if (!showAuth) {
       return (
         <LandingPage
+          installButton={<PwaInstallButton install={pwaInstall} />}
           onSignIn={() => {
             setAuthMode('sign-in');
             setShowAuth(true);
@@ -77,6 +81,7 @@ function App() {
   return (
     <TasksPage
       user={user}
+      installButton={<PwaInstallButton install={pwaInstall} />}
       onSignOut={signOutCurrentUser}
     />
   );

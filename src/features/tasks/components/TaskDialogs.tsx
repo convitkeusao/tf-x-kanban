@@ -12,6 +12,43 @@ function ModalFrame({ children, onClose, size = 'md' }: ModalProps & { children:
   return <Modal opened onClose={onClose} centered size={size} radius={0} withCloseButton={false}>{children}</Modal>;
 }
 
+export function ConfirmationModal({ title, message, confirmLabel, onClose, onConfirm }: ModalProps & {
+  title: string;
+  message: string;
+  confirmLabel: string;
+  onConfirm: () => Promise<void>;
+}) {
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+
+  async function confirm() {
+    setSubmitting(true);
+    setError('');
+    try {
+      await onConfirm();
+      onClose();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'Không thể hoàn tất thao tác.');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <ModalFrame onClose={onClose}>
+      <Stack gap="md">
+        <Title order={2} size="h3">{title}</Title>
+        <Text size="sm">{message}</Text>
+        {error && <Alert color="red" role="alert">{error}</Alert>}
+        <Group justify="flex-end">
+          <Button variant="default" onClick={onClose} disabled={submitting}>Hủy</Button>
+          <Button color="red" onClick={() => void confirm()} loading={submitting}>{confirmLabel}</Button>
+        </Group>
+      </Stack>
+    </ModalFrame>
+  );
+}
+
 export function TaskModal({ members, onClose, onSubmit }: ModalProps & { members: TeamMember[]; onSubmit: (task: NewTask) => Promise<void> }) {
   const [title, setTitle] = useState('');
   const [prerequisites, setPrerequisites] = useState('');
@@ -97,6 +134,12 @@ type MembersModalProps = ModalProps & {
 
 export function MembersModal({ groupId, groupName, members, tasks, currentUserId, isManager, onRemoveMember, onLeaveGroup, onTransferManager, onClose }: MembersModalProps) {
   const [removingMemberId, setRemovingMemberId] = useState<string | null>(null);
+  const [pendingRemoval, setPendingRemoval] = useState<{
+    member: TeamMember;
+    transferToId: string | null;
+    deleteOpenTasks: boolean;
+    openTaskCount: number;
+  } | null>(null);
   const [taskHandling, setTaskHandling] = useState<'reassign' | 'delete'>('reassign');
   const [reassignToId, setReassignToId] = useState(members.find((member) => member.id !== currentUserId)?.id || '');
   const [leaveTransferToId, setLeaveTransferToId] = useState(members.find((member) => member.id !== currentUserId)?.id || '');
@@ -105,6 +148,7 @@ export function MembersModal({ groupId, groupName, members, tasks, currentUserId
   const [actionError, setActionError] = useState('');
   const otherMembers = members.filter((member) => member.id !== currentUserId);
   return (
+    <>
     <ModalFrame onClose={onClose} size="xl"><Stack gap="md">
       <Title order={2} size="h3">Thành viên nhóm</Title>
       <Stack mah="55vh" style={{ overflowY: 'auto' }} gap="sm">
@@ -128,14 +172,14 @@ export function MembersModal({ groupId, groupName, members, tasks, currentUserId
               </> : <Text size="sm">Thành viên này không có công việc chưa hoàn thành.</Text>}
               {actionError && <Alert color="red">{actionError}</Alert>}
               <Group justify="flex-end">
-                <Button color="red" loading={submitting} disabled={taskHandling === 'reassign' && !reassignToId && openTasks.length > 0} onClick={async () => {
+                <Button color="red" loading={submitting} disabled={taskHandling === 'reassign' && !reassignToId && openTasks.length > 0} onClick={() => {
                   const hasOpenTasks = openTasks.length > 0;
-                  const deleteOpenTasks = hasOpenTasks && taskHandling === 'delete';
-                  if (!window.confirm(deleteOpenTasks ? `Xóa ${member.name} và các công việc chưa hoàn thành của họ? Công việc đã hoàn thành sẽ được giữ lại.` : `Xóa ${member.name} khỏi nhóm${hasOpenTasks ? ' và chuyển giao công việc chưa hoàn thành' : ''}?`)) return;
-                  setSubmitting(true); setActionError('');
-                  try { await onRemoveMember(member.id, hasOpenTasks && taskHandling === 'reassign' ? reassignToId : null, deleteOpenTasks); setRemovingMemberId(null); }
-                  catch (caught) { setActionError(caught instanceof Error ? caught.message : 'Không thể xóa thành viên.'); }
-                  finally { setSubmitting(false); }
+                  setPendingRemoval({
+                    member,
+                    transferToId: hasOpenTasks && taskHandling === 'reassign' ? reassignToId : null,
+                    deleteOpenTasks: hasOpenTasks && taskHandling === 'delete',
+                    openTaskCount: openTasks.length,
+                  });
                 }}>Xác nhận xóa</Button>
               </Group>
             </Stack>}
@@ -171,6 +215,28 @@ export function MembersModal({ groupId, groupName, members, tasks, currentUserId
       </Stack></Paper>}
       <Group justify="flex-end"><Button onClick={onClose}>Đóng</Button></Group>
     </Stack></ModalFrame>
+    {pendingRemoval && (
+      <ConfirmationModal
+        title={`Xóa ${pendingRemoval.member.name} khỏi nhóm?`}
+        message={pendingRemoval.deleteOpenTasks
+          ? `Thành viên và ${pendingRemoval.openTaskCount} công việc chưa hoàn thành sẽ bị xóa. Công việc đã hoàn thành được giữ lại. Thao tác này không thể hoàn tác.`
+          : pendingRemoval.openTaskCount
+            ? `Công việc chưa hoàn thành của thành viên sẽ được chuyển giao. Công việc đã hoàn thành được giữ lại. Thao tác này không thể hoàn tác.`
+            : 'Thao tác này không thể hoàn tác.'}
+        confirmLabel="Xóa thành viên"
+        onClose={() => setPendingRemoval(null)}
+        onConfirm={async () => {
+          await onRemoveMember(
+            pendingRemoval.member.id,
+            pendingRemoval.transferToId,
+            pendingRemoval.deleteOpenTasks,
+          );
+          setRemovingMemberId(null);
+          setPendingRemoval(null);
+        }}
+      />
+    )}
+    </>
   );
 }
 

@@ -2,6 +2,7 @@ import { AppUser } from '../../../api/supabaseAuth';
 import {
   AccountModal,
   CompletionReportModal,
+  ConfirmationModal,
   GroupModal,
   InviteCodeModal,
   MembersModal,
@@ -14,6 +15,7 @@ import { NewTask, Task } from '../taskTypes';
 
 type Props = {
   showTaskModal: boolean;
+  showDeleteGroupConfirm: boolean;
   groupModalMode: 'create' | 'join' | null;
   showInviteModal: boolean;
   showMembersModal: boolean;
@@ -27,6 +29,8 @@ type Props = {
   tasks: Task[];
   isManager: boolean;
   onCloseTask: () => void;
+  onCloseDeleteGroupConfirm: () => void;
+  onConfirmDeleteGroup: () => Promise<void>;
   onGroupAction: (value: string) => Promise<void>;
   onCloseGroup: () => void;
   onCloseInvite: () => void;
@@ -43,6 +47,7 @@ type Props = {
 
 export function TasksPageModals({
   showTaskModal,
+  showDeleteGroupConfirm,
   groupModalMode,
   showInviteModal,
   showMembersModal,
@@ -56,6 +61,8 @@ export function TasksPageModals({
   tasks,
   isManager,
   onCloseTask,
+  onCloseDeleteGroupConfirm,
+  onConfirmDeleteGroup,
   onGroupAction,
   onCloseGroup,
   onCloseInvite,
@@ -72,6 +79,15 @@ export function TasksPageModals({
   return (
     <>
       {showTaskModal && <TaskModal members={members} onClose={onCloseTask} onSubmit={onCreateTask} />}
+      {showDeleteGroupConfirm && currentGroup && (
+        <ConfirmationModal
+          title={`Xóa nhóm "${currentGroup.name}"?`}
+          message="Tất cả công việc, thành viên và nhật ký của nhóm cũng sẽ bị xóa. Thao tác này không thể hoàn tác."
+          confirmLabel="Xóa nhóm"
+          onClose={onCloseDeleteGroupConfirm}
+          onConfirm={onConfirmDeleteGroup}
+        />
+      )}
       {groupModalMode && <GroupModal mode={groupModalMode} onClose={onCloseGroup} onSubmit={onGroupAction} />}
       {showInviteModal && currentGroup && <InviteCodeModal group={currentGroup} onClose={onCloseInvite} />}
       {showMembersModal && currentGroup && user && (
